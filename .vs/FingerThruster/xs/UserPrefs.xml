@@ -1,0 +1,20 @@
+﻿<Properties StartupConfiguration="{B3BB2130-C7F9-4879-F06E-F2619140D2CF}|">
+  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="Unity.Editor" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/TerrainGenerator.cs">
+    <Files>
+      <File FileName="Assets/Scripts/PlayerController.cs" Line="207" Column="13" />
+      <File FileName="Assets/Scripts/TerrainGenerator.cs" Line="19" Column="35" />
+      <File FileName="Assets/Scripts/EnemyController.cs" Line="49" Column="79" />
+      <File FileName="Assets/Scripts/CameraController.cs" Line="9" Column="1" />
+      <File FileName="Assets/Scripts/FieldGenerator.cs" Line="22" Column="2" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore>
+      <Breakpoint file="/Users/mcmohorn/FingerThruster/Assets/Scripts/TerrainGenerator.cs" relfile="Assets/Scripts/TerrainGenerator.cs" line="289" column="1" />
+    </BreakpointStore>
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MultiItemStartupConfigurations />
+</Properties>
