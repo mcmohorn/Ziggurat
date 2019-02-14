@@ -17,14 +17,21 @@ public class CameraController : MonoBehaviour {
         if (Input.GetKey("joystick button 5") )
         {
             // look backwards
-            transform.position = player.transform.position + Vector3.up;
+            //transform.position = player.transform.position + transform.up;
 
-            transform.LookAt(player.transform.position + Vector3.up - offsetScale * player.transform.forward);
+            //transform.LookAt(player.transform.position + transform.up - offsetScale * player.transform.forward);
         } else {
             // look forwards, keep camera above the player
-            transform.position = player.transform.position + Vector3.up - offsetScale * player.transform.forward;
+            transform.position = player.transform.position + player.transform.up - offsetScale * player.transform.forward;
 
-            transform.LookAt(player.transform.position + Vector3.up);
+            transform.rotation = player.transform.rotation;
+            //transform.rotation = Quaternion.Euler(0,0,0);
+
+            //transform.LookAt(player.transform.position + player.transform.up);
+
+            //transform.position = player.transform.position + transform.up - offsetScale * player.transform.forward;
+
+            //transform.LookAt(player.transform.position + transform.up);
         }
 
 

@@ -5,31 +5,26 @@ using System.Collections.Generic;
 using System.Linq;
 
 public class TerrainGenerator : MonoBehaviour {
-    //public int mapZ = 3000;
-    public int mapX = 1000;
-    public int mapY = 1000;
-    public int width = 1000;
-    public int height = 1000;
-    public int border = 30;
-    public float mazeWallHeight = 0.5f;
+    public int n = 9;
+    public int startCellIndex = 4;
+    public int width = 500;
+    public int height = 500;
     public int depth = 20;
+    
     public GameObject bulletPrefab;
     public GameObject enemyPrefab;
     public GameObject wallPrefab;
-    public float scale = 20f;
+    public GameObject facadePrefab;
+    public GameObject rampPrefab;
 
-    public float outerWallHeight = 10.0f;
+
+    public float outerWallHeight = 100.0f;
     public float outerWallDepth = 5.0f;
     public float floorDepth = 5.0f;
 
-    public int nx;
-    public int ny;
-
-    private int pillarHeight = 10;
-    private int pillarWidth = 50;
-
-    // should be a square number 
-    public int n = 5;
+    public float edgeLength;
+    public float edgeWidth;
+    
 
     public List<GameObject> bullets;
 
@@ -39,65 +34,95 @@ public class TerrainGenerator : MonoBehaviour {
     private Dictionary<int, bool> marks;
 
     static  System.Random rnd = new System.Random();
+  
 
     private void Start()
     {
 
+        edgeLength = 1.0f*width/n;
+        edgeWidth = 10.0f;
 
-        Terrain terrain = GetComponent<Terrain>();
+     GenerateRamp();
+       Terrain terrain = GetComponent<Terrain>();
+        Debug.Log(terrain.terrainData.size);
         terrain.terrainData = GenerateTerrain(terrain.terrainData);
             
         bullets = new List<GameObject>();
+
+
+        //GenerateHoles();
         
-        GenerateOuterWalls();
+        //GenerateOuterWalls();
         
 
     }
+
+    
+
+
+  
+  private void GenerateRamp() {
+      // front ramp
+        var ramp = (GameObject)Instantiate(rampPrefab, new Vector3(width/2.0f, 0, -outerWallHeight), new Quaternion(0,0,0,0));
+        ramp.gameObject.name = "Ramp - Front";
+        ramp.transform.localScale = new Vector3(3.0f, outerWallHeight/2.0f, outerWallHeight/2.0f);
+  }
+    
+
+     
 
     private void GenerateOuterWalls ()
     {
         // front wall
         var wall0 = (GameObject)Instantiate(wallPrefab, new Vector3(width/2.0f + 1.0f*width/n - 5.0f, outerWallHeight/2.0f, 0), new Quaternion(0,0,0,0));
+        wall0.gameObject.name = "Outer Wall - Front";
         wall0.transform.localScale = new Vector3(width, outerWallHeight, outerWallDepth);
 
         // back wall
         var wall3 = (GameObject)Instantiate(wallPrefab, new Vector3(width/2.0f, outerWallHeight/2.0f, width), new Quaternion(0,0,0,0));
+        wall3.gameObject.name = "Outer Wall - Back";
         wall3.transform.localScale = new Vector3(width, outerWallHeight, outerWallDepth);
 
         // side wall1
         var wall1 = (GameObject)Instantiate(wallPrefab, new Vector3(0, outerWallHeight/2.0f, width/2.0f), new Quaternion(0,0,0,0));
+        wall1.gameObject.name = "Outer Wall - Right";
         wall1.transform.localScale = new Vector3(outerWallDepth, outerWallHeight, width);
 
         // side wall2
         var wall2 = (GameObject)Instantiate(wallPrefab, new Vector3(width, outerWallHeight/2.0f, width/2.0f), new Quaternion(0,0,0,0));
+        wall2.gameObject.name = "Outer Wall - Left";
         wall2.transform.localScale = new Vector3(outerWallDepth, outerWallHeight, width);
 
         
 
         // ceiling
-        var floor1 = (GameObject)Instantiate(wallPrefab, new Vector3(width/2.0f, outerWallHeight, width/2.0f), new Quaternion(0,0,0,0));
-        floor1.transform.localScale = new Vector3(width, floorDepth, width);
+       //var floor1 = (GameObject)Instantiate(wallPrefab, new Vector3(width/2.0f, outerWallHeight, width/2.0f), new Quaternion(0,0,0,0));
+        //floor1.transform.localScale = new Vector3(width, floorDepth, width);
 
 
     }
 
     void GenerateEdges(TerrainData terrainData) 
     {
-
-         G[0].Clear();
-
         foreach (var v in G)
         {
-            Debug.Log("vertex v has position" + vertexLocation(v.Key));
-
             Vector2 currLoc = vertexLocation(v.Key);
             foreach (var neighbor in v.Value)
-            {
+            {   
                 Vector2 neighborLoc = vertexLocation(neighbor);
                 if (currLoc.x < neighborLoc.x || currLoc.y < neighborLoc.y)
                 {
-                    terrainData.SetHeights((int)currLoc.x, (int)currLoc.y, PillarHeights(currLoc, neighborLoc));
-
+                    Quaternion rot = new Quaternion(0,0,0,0);
+                    Vector3 scale = new Vector3(edgeLength, edgeWidth, edgeWidth);
+                    Vector3 pos = new Vector3(currLoc.x + edgeLength/2.0f,edgeWidth/2.0f+20.0f, currLoc.y);
+                    if((int)Math.Abs(v.Key - neighbor) == n+1) {
+                        // vertical wall has different position / scale
+                        scale = new Vector3(edgeWidth, edgeWidth, edgeLength);
+                        pos = new Vector3(currLoc.x, edgeWidth/2.0f +20.0f, currLoc.y+ edgeLength/2.0f);
+                    } 
+                    var w = (GameObject)Instantiate(wallPrefab, pos, rot);
+                    w.gameObject.name = "Maze Wall - " + v.Key + "-" +neighbor;
+                    w.transform.localScale = scale;
                 }
 
             }
@@ -107,21 +132,20 @@ public class TerrainGenerator : MonoBehaviour {
 
     TerrainData GenerateTerrain (TerrainData terrainData)
     {
-        terrainData.size = new Vector3(width, depth, height);
+        terrainData.size= new Vector3(width, depth, height);
 
         // initialize all heights to 0
         terrainData.SetHeights(0, 0, InitHeights());
 
         GenerateMazeGraphs();
 
-        // the first wall as a door
-        G[0].Remove(1);
-
-        GenerateEdges(terrainData);
-       
+        // remove middle front wall as door
+        G[startCellIndex].Remove(startCellIndex+1);
 
 
-
+        // TODO TURN EDGES BACK ON
+        // GenerateEdges(terrainData);
+ 
         // Splatmap data is stored internally as a 3d array of floats, so declare a new empty array ready for your custom splatmap data:
         float[,,] splatmapData = new float[terrainData.alphamapWidth, terrainData.alphamapHeight, terrainData.alphamapLayers];
 
@@ -243,8 +267,15 @@ public class TerrainGenerator : MonoBehaviour {
             // create a bullet marker at this spot
             Vector3 pos = new Vector3(currX, 1, currY);
             Quaternion rot = new Quaternion();
-            if (cell.Key == 3 || cell.Key == n*n-1) {
+            if (cell.Key == 3 ) {
                 var bullet = (GameObject)Instantiate(bulletPrefab, pos, rot);
+                bullet.gameObject.name = "Starting Point";
+                bullet.transform.localScale = new Vector3(5, 5, 5);
+            }
+
+            if (cell.Key == n*n-1) {
+                var bullet = (GameObject)Instantiate(bulletPrefab, pos, rot);
+                bullet.gameObject.name = "Finish Point";
                 bullet.transform.localScale = new Vector3(5, 5, 5);
             }
 
@@ -272,8 +303,7 @@ public class TerrainGenerator : MonoBehaviour {
             marks[cell.Key] = false;
         }
 
-
-        int curr = 0;
+        int curr = startCellIndex;
         marks[curr] = true;
 
         while(someCellUnmarked(marks)) {
@@ -392,33 +422,6 @@ public class TerrainGenerator : MonoBehaviour {
          }
         return heights;
      }
-
-    float[,] PillarHeights(Vector2 loc1, Vector2 loc2)
-    {
-        int numX = pillarHeight;
-        int numY = pillarWidth;
-
-        if(loc1.x != loc2.x) {
-            numX = pillarWidth;
-            numY = pillarHeight;
-        }
-
-
-
-
-        //step X set height of each x,y coordinate in the terrain
-        float[,] heights = new float[numY, numX];
-
-
-        for (int x = 0; x < numX; x++)
-        {
-            for (int y = 0; y < numY; y++)
-            {
-                heights[y, x] = mazeWallHeight;
-            }
-        }
-        return heights;
-    }
 
     int getRowForX(float inputX)
     {

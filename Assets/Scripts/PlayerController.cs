@@ -2,15 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour {
-	public float speed;
-	public float turnSpeed;
+public class PlayerController : MonoBehaviour
+{
+    public float speed;
+    public float turnSpeed;
     private float left, right;
     private int collisionCount = 0;
     private Vector3 contactNormal;
     public GameObject bulletPrefab;
     public GameObject planetPrefab;
+    public GameObject holePrefab;
     public GameObject rightEngine;
+
+    public GameObject zig;
     public Transform bulletSpawn;
     public float jumpForce;
     private int rightFingerId = -1;
@@ -21,22 +25,69 @@ public class PlayerController : MonoBehaviour {
     private List<Vector3> planetPositions;
     private List<Vector3> planetSizes;
 
-    public List<GameObject>planets;
+    public List<GameObject> planets;
+
+    public Vector3 artificialGravityDirection;
 
     private float s = 0;
     public float threshold;
+
+    public float currentSpeed;
     public float jumpCooldown = 5;
 
-	private void Start()
-	{
+    private void Start()
+    {
         Debug.Log("playform is " + Application.platform);
         threshold = Screen.height / 2;
         jumpCooldown = 0;
-        
-        CreatePlanets();
-        
 
-	}
+        CreatePlanets();
+
+        CreateHoles();
+
+        // 
+    }
+
+    private void CreateHoles()
+    {
+        //var hole = (GameObject)Instantiate(holePrefab, new Vector3(10,0,0), new Quaternion(0,0,0,0));
+
+        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sphere.gameObject.name = "Hole1";
+        sphere.gameObject.transform.position = new Vector3(10, 0, 0);
+        sphere.gameObject.transform.localScale = new Vector3(10, 10, 10);
+        sphere.gameObject.layer = 8;
+        sphere.gameObject.AddComponent<Rigidbody>();
+        sphere.gameObject.GetComponent<Rigidbody>().isKinematic = true;
+        sphere.gameObject.GetComponent<Rigidbody>().useGravity = false;
+
+        var sphereCollider = gameObject.AddComponent<SphereCollider>();
+        sphereCollider.radius = 1.5f;
+        sphereCollider.isTrigger = true;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.name == "Hole1")
+        {
+            Debug.Log("trigger entered, collider name: " + other.name + " gon:" + other.gameObject.name);
+            Physics.IgnoreCollision(other, GetComponent<Collider>(), true);
+            Physics.IgnoreCollision(zig.GetComponent<Collider>(), GetComponent<Collider>(), true);
+        }
+        //{
+        // Debug.Log("trigger entered, collider name: " + other.name + " gon:" + other.gameObject.name);
+        //}
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.name == "Hole1")
+        {
+            Physics.IgnoreCollision(other, GetComponent<Collider>(), false);
+            Physics.IgnoreCollision(zig.GetComponent<Collider>(), GetComponent<Collider>(), false);
+
+        }
+    }
 
     private void CreatePlanets()
     {
@@ -55,131 +106,55 @@ public class PlayerController : MonoBehaviour {
         planetSizes.Add(new Vector3(1.5f, 1.5f, 1.5f));
         planetSizes.Add(new Vector3(1.0f, 1.0f, 1.0f));
 
-        int i=0;
-        foreach( var pos in planetPositions) {
-            var planet = (GameObject)Instantiate(planetPrefab, transform.position + pos, new Quaternion(0,0,0,0));
+        int i = 0;
+        foreach (var pos in planetPositions)
+        {
+            var planet = (GameObject)Instantiate(planetPrefab, transform.position + pos, new Quaternion(0, 0, 0, 0));
             planet.transform.localScale = planetSizes[i];
             planets.Add(planet);
             i++;
         }
+
     }
 
-	void Update()
-	{
+    void UpdatePlanets()
+    {
+        /* 
+        use an outwards raycast to determine if planet should be hidden from the user (away from camera)
+        RaycastHit hit;
+        // Does the ray intersect any objects excluding the player layer
+        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hit, Mathf.Infinity, layerMask))
+        {
+            Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * hit.distance, Color.yellow);
+            Debug.Log("Did Hit");
+        }
+        else
+        {
+            Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * 1000, Color.white);
+            Debug.Log("Did not Hit");
+        }
+        */
+    }
+
+
+
+    void Update()
+    {
+
+
         bool doMobile = false;
 
         if (jumpCooldown > 0)
         {
             jumpCooldown -= Time.deltaTime;
         }
-        if (Application.platform == RuntimePlatform.IPhonePlayer || doMobile) {
-            // TODO only do this if platform is mobile
-            foreach (var touch in Input.touches)
-            {
 
-                if (touch.phase == TouchPhase.Began)
-                {
-                    Debug.Log("TOUCH BEGAN" + touch.fingerId + ",");
-
-
-                    if ((touch.position.x > Screen.width / 2f) && (touch.position.y > Screen.height / 2f) && rightFingerId == -1)
-                    {
-                        //new right finger origin on right of screen
-                        right = 1;
-                        rightFingerId = touch.fingerId;
-
-
-
-                    }
-                    else if ((touch.position.x > Screen.width / 2f) && (touch.position.y <= Screen.height / 2f) && rightFingerId == -1)
-                    {
-                        rightFingerId = touch.fingerId;
-                        right = -1;
-                    }
-                    else if ((touch.position.x < Screen.width / 2f) && (touch.position.y > Screen.height / 2f) && rightFingerId == -1)
-                    {
-                        //new left finger at top
-                        left = 1;
-                        leftFingerId = touch.fingerId;
-                        //rightFingerOrigin = touch.position;
-
-
-
-                    }
-                    else if ((touch.position.x < Screen.width / 2f) && (touch.position.y <= Screen.height / 2f) && rightFingerId == -1)
-                    {
-                        leftFingerId = touch.fingerId;
-                        left = -1;
-                    }
-
-
-                }
-                if (touch.phase == TouchPhase.Moved)
-                {
-                    Debug.Log("TOUCH MOVED" + touch.fingerId + ",");
-                    if (touch.fingerId == rightFingerId)
-                    {
-                        //right = (touch.position.y - Screen.height / 2f) / (Screen.height / 2f);
-                        //float diffY = 0;
-                        //if (touch.position.y >= rightFingerOrigin.y) {
-                        //    Debug.Log("TOUCH Moved UP" + touch.fingerId);
-                        //    diffY = Mathf.Min(touch.position.y - rightFingerOrigin.y, threshold);
-                        //} else {
-                        //    Debug.Log("TOUCH Moved Down" + touch.fingerId);
-                        //    diffY = Mathf.Max(touch.position.y - rightFingerOrigin.y, -1f*threshold);
-                        //}
-                        //right = diffY / (threshold);
-                    }
-
-                    if (touch.fingerId == leftFingerId)
-                    {
-                        //left = (touch.position.y - Screen.height / 2f) / (Screen.height / 2f);
-                        //float diffY = 0;
-                        //if (touch.position.y >= leftFingerOrigin.y)
-                        //{   
-                        //    diffY = Mathf.Min(touch.position.y - leftFingerOrigin.y, threshold);
-                        //}
-                        //else
-                        //{
-
-                        //    diffY = Mathf.Max(touch.position.y - leftFingerOrigin.y, -1f * threshold);
-                        //}
-                        //left = diffY / (Screen.width / 4f);
-                    }
-                    //Debug.Log("Left" + left);
-                }
-
-                if (touch.phase == TouchPhase.Ended)
-                {
-                    Debug.Log("TOUCH ENDED " + touch.fingerId);
-                    if (touch.fingerId == rightFingerId)
-                    {
-                        right = 0;
-                        rightFingerId = -1;
-                    }
-                    if (touch.fingerId == leftFingerId)
-                    {
-                        left = 0;
-                        leftFingerId = -1;
-                    }
-                }
-
-                if (touch.phase == TouchPhase.Canceled)
-                {
-                    Debug.Log("TOUCH CANCELLED " + touch.fingerId);
-                    if (touch.fingerId == rightFingerId)
-                    {
-                        right = 0;
-                        rightFingerId = -1;
-                    }
-                    if (touch.fingerId == leftFingerId)
-                    {
-                        left = 0;
-                        leftFingerId = -1;
-                    }
-                }
-            }  
-        } else {
+        if (Application.platform == RuntimePlatform.IPhonePlayer || doMobile)
+        {
+            UpdateMobile();
+        }
+        else
+        {
             left = Input.GetAxis("Vertical2");
             right = Input.GetAxis("Vertical1");
             if (Input.GetKeyDown("joystick button 7") || Input.GetKeyDown(KeyCode.Space))
@@ -187,118 +162,259 @@ public class PlayerController : MonoBehaviour {
                 Fire();
 
             }
-           
+
+            {
+
+            }
+
         }
-           
 
+    }
 
-       
-
-
-
-	}
-
-	void FixedUpdate () 
+    void FixedUpdate()
     {
-
+        if (collisionCount == 0)
+        {
+            Debug.Log("no collisions !!!!!!");
+        }
         // Debug.Log("left  is " + left + "right is " + right);
-        int i =0;
-        foreach (var planet in planets) {
+        int i = 0;
+        foreach (var planet in planets)
+        {
             planet.transform.position = transform.position + planetPositions[i];
             i++;
         }
 
         float movement = (left + right) * speed;
         s = movement;
+        currentSpeed = movement;
+        GetComponent<Rigidbody>().AddForce(transform.forward * movement, ForceMode.Acceleration);
 
 
-        //float engineMag = Mathf.Clamp01(movement);
-       // irightEngine.transform.localScale = new Vector3(engineMag, engineMag, engineMag);
-
-        GetComponent<Rigidbody>().AddForce(transform.forward * movement,ForceMode.Acceleration);
-
-
+        // TODO: this single statement is equivalent to the following two, I am  trying to figure out why the turning directions behave differently
         //float torque = (left - right) * turnSpeed * Time.deltaTime;
         //GetComponent<Rigidbody>().AddTorque(transform.up * torque, ForceMode.VelocityChange);
-
         GetComponent<Rigidbody>().AddTorque(transform.up * right * turnSpeed * Time.deltaTime, ForceMode.VelocityChange);
         GetComponent<Rigidbody>().AddTorque(-1.0f * transform.up * left * turnSpeed * Time.deltaTime, ForceMode.VelocityChange);
 
-        if (Input.GetKeyDown("joystick button 1"))
+
+        if(artificialGravityDirection.magnitude > 0 || this.GetComponent<GrappleHook>().hooked) {
+            this.GetComponent<Rigidbody>().useGravity = false;
+        } else {
+            this.GetComponent<Rigidbody>().useGravity = true;
+        }
+        GetComponent<Rigidbody>().AddForce(artificialGravityDirection * 9.8f, ForceMode.Acceleration);
+
+        if (Input.GetKeyDown("joystick button 3"))
         {
             Jump();
         }
 
+        if (Input.GetKeyDown("joystick button 1"))
+        {
+            AntiJump();
+        }
+
+        if (Input.GetKey("joystick button 0"))
+        {
+            Flatten();
+        }
 
 
-	}
+
+
+
+    }
 
     void OnCollisionEnter(Collision col)
     {
         collisionCount++;
-        
-        print("First normal of the point that collide: " + col.contacts[0].normal);
-        if (col.gameObject.name == "Terrain2" )
+
+        print("Collided with: " + col.gameObject.name + " at contact point " + col.contacts[0].normal);
+
+        if (col.gameObject.name == "Terrain2")
         {
-            print("Hit Terrain  " );
             jumpCooldown = 0;
-
-
-            if (col.contacts[0].normal == Vector3.up) {
-                print("WE UPSIDE DOWN NOW "); 
-            }
-           //GetComponent<Rigidbody>().AddForce(col.contacts[0].normal * 9.8f);
-            //var rot = Quaternion.FromToRotation(transform.up, col.contacts[0].normal);
-            //Vector3 n = col.contacts[0].normal;
-            //Vector3 d = transform.forward;
-            //Vector3 dir = Vector3.Cross(n, d).normalized;
-
-            //transform.rotation = Quaternion.FromToRotation(transform.forward, dir) * transform.rotation;
-
-        } else {
-            
         }
 
-        // 
-        if (col.gameObject.name == "Cube") {
-            Destroy(col.gameObject);
-        }
+    }
+
+
+
+
+    // TODO: Jump cooldown solution?
+    void Jump()
+    {
+        ///if (jumpCooldown <= 0) {
+        GetComponent<Rigidbody>().AddForce(transform.up * jumpForce, ForceMode.Impulse);
+        // jumpCooldown = 5;
+        //} else {
+        //   Debug.Log("seconds left until jump available " + jumpCooldown);
+        // }
+    }
+    void AntiJump()
+    {
+        // if (jumpCooldown <= 0) {
+        GetComponent<Rigidbody>().AddForce(-1.0f * transform.up * jumpForce, ForceMode.Impulse);
+        //  jumpCooldown = 5;
+        //  } else {
+        //  Debug.Log("seconds left until anti-jump available " + jumpCooldown);
+        //  }
+
     }
 
     void Fire()
     {
-        
-        // Create the Bullet from the Bullet Prefab
-        var bullet = (GameObject)Instantiate(
-            bulletPrefab,
-            transform.position + transform.forward*3.1f,
-            transform.rotation);
-
-        // Add velocity to the bullet
+        var bullet = (GameObject)Instantiate(bulletPrefab, transform.position + transform.forward * 3.1f, transform.rotation);
         bullet.GetComponent<Rigidbody>().velocity = bullet.transform.forward * (200f);
-
-        // Destroy the bullet after 2 seconds
         Destroy(bullet, 3.0f);
     }
 
-    void Jump()
+    void Flatten()
     {
-        if (jumpCooldown <= 0) {
-            GetComponent<Rigidbody>().AddForce(transform.up * jumpForce, ForceMode.Impulse);
-            Debug.Log("jump force " + transform.up * jumpForce);
-            jumpCooldown = 5;
-        } else {
-            Debug.Log("seconds left until jump available " + jumpCooldown);
-        }
+        Debug.Log("Flattening...");
+        // Rotate our transform a step closer to the target's.
+        var rot = Quaternion.FromToRotation(transform.up, Vector3.forward);
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, rot, Time.deltaTime * 40.0f);
 
-       
+        //transform.rotation = Quaternion.FromToRotation(transform.up, Vector3.up) * transform.rotation;
     }
 
-	private void OnCollisionExit(Collision col)
-	{
-       
 
-	}
+
+    private void OnCollisionExit(Collision col)
+    {
+
+        collisionCount--;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    void UpdateMobile()
+    {
+        // WORK IN PROGRESS
+        // TODO only do this if platform is mobile
+        foreach (var touch in Input.touches)
+        {
+
+            if (touch.phase == TouchPhase.Began)
+            {
+                Debug.Log("TOUCH BEGAN" + touch.fingerId + ",");
+
+
+                if ((touch.position.x > Screen.width / 2f) && (touch.position.y > Screen.height / 2f) && rightFingerId == -1)
+                {
+                    //new right finger origin on right of screen
+                    right = 1;
+                    rightFingerId = touch.fingerId;
+
+
+
+                }
+                else if ((touch.position.x > Screen.width / 2f) && (touch.position.y <= Screen.height / 2f) && rightFingerId == -1)
+                {
+                    rightFingerId = touch.fingerId;
+                    right = -1;
+                }
+                else if ((touch.position.x < Screen.width / 2f) && (touch.position.y > Screen.height / 2f) && rightFingerId == -1)
+                {
+                    //new left finger at top
+                    left = 1;
+                    leftFingerId = touch.fingerId;
+                    //rightFingerOrigin = touch.position;
+
+
+
+                }
+                else if ((touch.position.x < Screen.width / 2f) && (touch.position.y <= Screen.height / 2f) && rightFingerId == -1)
+                {
+                    leftFingerId = touch.fingerId;
+                    left = -1;
+                }
+
+
+            }
+            if (touch.phase == TouchPhase.Moved)
+            {
+                Debug.Log("TOUCH MOVED" + touch.fingerId + ",");
+                if (touch.fingerId == rightFingerId)
+                {
+                    //right = (touch.position.y - Screen.height / 2f) / (Screen.height / 2f);
+                    //float diffY = 0;
+                    //if (touch.position.y >= rightFingerOrigin.y) {
+                    //    Debug.Log("TOUCH Moved UP" + touch.fingerId);
+                    //    diffY = Mathf.Min(touch.position.y - rightFingerOrigin.y, threshold);
+                    //} else {
+                    //    Debug.Log("TOUCH Moved Down" + touch.fingerId);
+                    //    diffY = Mathf.Max(touch.position.y - rightFingerOrigin.y, -1f*threshold);
+                    //}
+                    //right = diffY / (threshold);
+                }
+
+                if (touch.fingerId == leftFingerId)
+                {
+                    //left = (touch.position.y - Screen.height / 2f) / (Screen.height / 2f);
+                    //float diffY = 0;
+                    //if (touch.position.y >= leftFingerOrigin.y)
+                    //{   
+                    //    diffY = Mathf.Min(touch.position.y - leftFingerOrigin.y, threshold);
+                    //}
+                    //else
+                    //{
+
+                    //    diffY = Mathf.Max(touch.position.y - leftFingerOrigin.y, -1f * threshold);
+                    //}
+                    //left = diffY / (Screen.width / 4f);
+                }
+                //Debug.Log("Left" + left);
+            }
+
+            if (touch.phase == TouchPhase.Ended)
+            {
+                Debug.Log("TOUCH ENDED " + touch.fingerId);
+                if (touch.fingerId == rightFingerId)
+                {
+                    right = 0;
+                    rightFingerId = -1;
+                }
+                if (touch.fingerId == leftFingerId)
+                {
+                    left = 0;
+                    leftFingerId = -1;
+                }
+            }
+
+            if (touch.phase == TouchPhase.Canceled)
+            {
+                Debug.Log("TOUCH CANCELLED " + touch.fingerId);
+                if (touch.fingerId == rightFingerId)
+                {
+                    right = 0;
+                    rightFingerId = -1;
+                }
+                if (touch.fingerId == leftFingerId)
+                {
+                    left = 0;
+                    leftFingerId = -1;
+                }
+            }
+        }
+    }
 
 
 }
