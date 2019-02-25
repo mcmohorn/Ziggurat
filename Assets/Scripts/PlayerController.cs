@@ -272,10 +272,19 @@ public class PlayerController : MonoBehaviour
 
     void Flatten()
     {
-        Debug.Log("Flattening...");
+        Debug.Log("twisting...");
         // Rotate our transform a step closer to the target's.
-        var rot = Quaternion.FromToRotation(transform.up, Vector3.forward);
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, rot, Time.deltaTime * 40.0f);
+        //var rot = Quaternion.FromToRotation(-transform.right, transform.up);
+        //Vector3 diff =  Vector3.up - transform.up;
+        //Debug.Log("Diff is " + diff);
+        //if (diff.magnitude > 0.01f) {
+
+        transform.Rotate(Vector3.forward * Time.deltaTime * 40f);
+           
+            
+        //}
+        //transform.localRotation = Quaternion.RotateTowards(transform.rotation, rot, Time.deltaTime * 40.0f);
+        //transform.localRotation = rot;
 
         //transform.rotation = Quaternion.FromToRotation(transform.up, Vector3.up) * transform.rotation;
     }
