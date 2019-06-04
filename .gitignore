@@ -4,3 +4,6 @@
 /MazeRace
 /MazeRace1
 /obj/Debug/
+Library/*
+/Library/metadata/*
+/Library/metadata/**/*

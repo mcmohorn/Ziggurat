@@ -11,9 +11,9 @@ public class CameraController : MonoBehaviour {
 
 	// LateUpdate is called once per frame, guaranteed to run after all items processed in update
 	// so we know the player has already moved for this frame
-	
+
 	void LateUpdate () {
-        
+
         if (Input.GetKey("joystick button 5") )
         {
             // look backwards
@@ -22,7 +22,7 @@ public class CameraController : MonoBehaviour {
             //transform.LookAt(player.transform.position + transform.up - offsetScale * player.transform.forward);
         } else {
             // look forwards, keep camera above the player
-            transform.position = player.transform.position + player.transform.up - offsetScale * player.transform.forward;
+            transform.position = player.transform.position + player.transform.up - 1.0f * player.transform.forward;
 
             transform.rotation = player.transform.rotation;
             //transform.rotation = Quaternion.Euler(0,0,0);

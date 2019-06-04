@@ -6,6 +6,9 @@ public class PlayerController : MonoBehaviour
 {
     public float speed;
     public float turnSpeed;
+
+    public float shipRadius;
+    public float radius;
     private float left, right;
     private int collisionCount = 0;
     private Vector3 contactNormal;
@@ -45,7 +48,7 @@ public class PlayerController : MonoBehaviour
 
         CreateHoles();
 
-        // 
+        //
     }
 
     private void CreateHoles()
@@ -119,7 +122,7 @@ public class PlayerController : MonoBehaviour
 
     void UpdatePlanets()
     {
-        /* 
+        /*
         use an outwards raycast to determine if planet should be hidden from the user (away from camera)
         RaycastHit hit;
         // Does the ray intersect any objects excluding the player layer
@@ -155,8 +158,9 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            left = Input.GetAxis("Vertical2");
-            right = Input.GetAxis("Vertical1");
+
+            left = Input.GetAxis("Vertical1");
+            right = Input.GetAxis("Vertical2");
             if (Input.GetKeyDown("joystick button 7") || Input.GetKeyDown(KeyCode.Space))
             {
                 Fire();
@@ -188,22 +192,38 @@ public class PlayerController : MonoBehaviour
         float movement = (left + right) * speed;
         s = movement;
         currentSpeed = movement;
-        GetComponent<Rigidbody>().AddForce(transform.forward * movement, ForceMode.Acceleration);
+
+        float mass = GetComponent<Rigidbody>().mass;
+        // add forward thrust
+
+        // float rightEngine = 1.0f;
+
+        //GetComponent<Rigidbody>().AddForceAtPosition(transform.forward * left * speed, transform.position - transform.right * shipRadius);
+        //GetComponent<Rigidbody>().AddForceAtPosition(transform.forward * right * speed, transform.position + transform.right * shipRadius);
+        
+        // forward
+        GetComponent<Rigidbody>().AddForce(transform.forward * (left+right) * speed, ForceMode.Acceleration);
+        // torque
+        GetComponent<Rigidbody>().AddTorque(transform.up * (left-right) * turnSpeed, ForceMode.Acceleration);
+
+    
+
+        
 
 
         // TODO: this single statement is equivalent to the following two, I am  trying to figure out why the turning directions behave differently
         //float torque = (left - right) * turnSpeed * Time.deltaTime;
-        //GetComponent<Rigidbody>().AddTorque(transform.up * torque, ForceMode.VelocityChange);
-        GetComponent<Rigidbody>().AddTorque(transform.up * right * turnSpeed * Time.deltaTime, ForceMode.VelocityChange);
-        GetComponent<Rigidbody>().AddTorque(-1.0f * transform.up * left * turnSpeed * Time.deltaTime, ForceMode.VelocityChange);
-
+        //GetComponent<Rigidbody>().AddTorque(transform.up * torque, ForceMode.Acceleration);
+        //GetComponent<Rigidbody>().AddTorque(transform.up * right * turnSpeed * Time.deltaTime, ForceMode.VelocityChange);
+        //GetComponent<Rigidbody>().AddTorque(-1.0f * transform.up * left * turnSpeed * Time.deltaTime, ForceMode.VelocityChange);
+        //  Debug.Log("torque" + torque);
 
         if(artificialGravityDirection.magnitude > 0 || this.GetComponent<GrappleHook>().hooked) {
-            this.GetComponent<Rigidbody>().useGravity = false;
+            //this.GetComponent<Rigidbody>().useGravity = false;
         } else {
-            this.GetComponent<Rigidbody>().useGravity = true;
+            //this.GetComponent<Rigidbody>().useGravity = true;
         }
-        GetComponent<Rigidbody>().AddForce(artificialGravityDirection * 9.8f, ForceMode.Acceleration);
+        // GetComponent<Rigidbody>().AddForce(artificialGravityDirection * 9.8f, ForceMode.Acceleration);
 
         if (Input.GetKeyDown("joystick button 3"))
         {
@@ -280,8 +300,8 @@ public class PlayerController : MonoBehaviour
         //if (diff.magnitude > 0.01f) {
 
         transform.Rotate(Vector3.forward * Time.deltaTime * 40f);
-           
-            
+
+
         //}
         //transform.localRotation = Quaternion.RotateTowards(transform.rotation, rot, Time.deltaTime * 40.0f);
         //transform.localRotation = rot;
@@ -380,7 +400,7 @@ public class PlayerController : MonoBehaviour
                     //left = (touch.position.y - Screen.height / 2f) / (Screen.height / 2f);
                     //float diffY = 0;
                     //if (touch.position.y >= leftFingerOrigin.y)
-                    //{   
+                    //{
                     //    diffY = Mathf.Min(touch.position.y - leftFingerOrigin.y, threshold);
                     //}
                     //else

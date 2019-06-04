@@ -44,7 +44,7 @@ public class TerrainGenerator : MonoBehaviour {
 
      GenerateRamp();
        Terrain terrain = GetComponent<Terrain>();
-        Debug.Log(terrain.terrainData.size);
+       // Debug.Log(terrain.terrainData.size);
         terrain.terrainData = GenerateTerrain(terrain.terrainData);
             
         bullets = new List<GameObject>();
