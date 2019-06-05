@@ -9,7 +9,7 @@ public class PlayerController : MonoBehaviour
 
     public float shipRadius;
     public float radius;
-    private float left, right;
+    private float left, right,leftH, rightH;
     private int collisionCount = 0;
     private Vector3 contactNormal;
     public GameObject bulletPrefab;
@@ -161,6 +161,8 @@ public class PlayerController : MonoBehaviour
 
             left = Input.GetAxis("Vertical1");
             right = Input.GetAxis("Vertical2");
+            leftH = Input.GetAxis("Horizontal1");
+            rightH = Input.GetAxis("Horizontal2");
             if (Input.GetKeyDown("joystick button 7") || Input.GetKeyDown(KeyCode.Space))
             {
                 Fire();
@@ -194,7 +196,25 @@ public class PlayerController : MonoBehaviour
         currentSpeed = movement;
 
         float mass = GetComponent<Rigidbody>().mass;
+    
+        if (Mathf.Abs(left) > 0.05 || Mathf.Abs(right) > 0.05 || Mathf.Abs(leftH) > 0.05 || Mathf.Abs(rightH) > 0.05) {
+            
+        } else {
+            Debug.Log("should stop");
+            //GetComponent<Rigidbody>().AddForce(transform.up * -1.0f * speed, ForceMode.Force);
+            //GetComponent<Rigidbody>().velocity = Vector3.zero;
+            //GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
+        }
         // add forward thrust
+
+
+        GetComponent<Rigidbody>().AddForce(transform.forward * (left+right) * speed, ForceMode.Impulse);
+        GetComponent<Rigidbody>().AddForce(transform.right * (leftH - rightH) * speed, ForceMode.Impulse);
+        GetComponent<Rigidbody>().AddTorque(transform.up * (left-right) * turnSpeed, ForceMode.Impulse);  
+
+        GameObject.Find("EngineRight").transform.localScale = new Vector3(right, right, right);
+        GameObject.Find("EngineLeft").transform.localScale = new Vector3(left, left, left);
+
 
         // float rightEngine = 1.0f;
 
@@ -202,9 +222,9 @@ public class PlayerController : MonoBehaviour
         //GetComponent<Rigidbody>().AddForceAtPosition(transform.forward * right * speed, transform.position + transform.right * shipRadius);
         
         // forward
-        GetComponent<Rigidbody>().AddForce(transform.forward * (left+right) * speed, ForceMode.Acceleration);
+        
         // torque
-        GetComponent<Rigidbody>().AddTorque(transform.up * (left-right) * turnSpeed, ForceMode.Acceleration);
+        
 
     
 

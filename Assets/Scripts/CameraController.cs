@@ -18,23 +18,12 @@ public class CameraController : MonoBehaviour {
         {
             // look backwards
             //transform.position = player.transform.position + transform.up;
-
             //transform.LookAt(player.transform.position + transform.up - offsetScale * player.transform.forward);
         } else {
             // look forwards, keep camera above the player
-            transform.position = player.transform.position + player.transform.up - 1.0f * player.transform.forward;
+            transform.position = player.transform.position + player.transform.up - 3.0f * player.transform.forward;
 
             transform.rotation = player.transform.rotation;
-            //transform.rotation = Quaternion.Euler(0,0,0);
-
-            //transform.LookAt(player.transform.position + player.transform.up);
-
-            //transform.position = player.transform.position + transform.up - offsetScale * player.transform.forward;
-
-            //transform.LookAt(player.transform.position + transform.up);
         }
-
-
 	}
-
 }
