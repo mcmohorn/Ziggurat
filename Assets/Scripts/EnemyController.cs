@@ -5,6 +5,8 @@ using UnityEngine;
 public class EnemyController : MonoBehaviour {
     Material m_material;
     public float speed;
+
+    public GameObject zig;
     private Transform target = null;
     void OnTriggerEnter(Collider other)
     {
@@ -15,6 +17,7 @@ public class EnemyController : MonoBehaviour {
 
         } 
     }
+    
 
     void OnTriggerExit(Collider other)
     {
@@ -32,6 +35,7 @@ public class EnemyController : MonoBehaviour {
         Debug.Log("Enemy controller started");
         m_material = GetComponent<Renderer>().material;
         print("Materials " + Resources.FindObjectsOfTypeAll(typeof(Material)).Length);
+        Physics.IgnoreCollision(zig.GetComponent<Collider>(), GetComponent<Collider>(), true);
 	}
 	
 	// Update is called once per frame

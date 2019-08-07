@@ -5,17 +5,26 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     public float speed;
+
+    public float liftSpeed;
     public float turnSpeed;
 
-    public float shipRadius;
-    public float radius;
+     public float bulletSpeed;
+
+    public float fireRate;
+
+    public float nextFire = 0f;
+
     private float left, right,leftH, rightH;
     private int collisionCount = 0;
     private Vector3 contactNormal;
     public GameObject bulletPrefab;
     public GameObject planetPrefab;
-    public GameObject holePrefab;
-    public GameObject rightEngine;
+
+    public GameObject testCube;
+
+    public float twistSpeed = 80f;
+
 
     public GameObject zig;
     public Transform bulletSpawn;
@@ -35,8 +44,19 @@ public class PlayerController : MonoBehaviour
     private float s = 0;
     public float threshold;
 
+    public bool grounded = false;
+
     public float currentSpeed;
     public float jumpCooldown = 5;
+
+
+    public float barDisplay; //current progress
+     public Vector2 pos = new Vector2(20,40);
+     public Vector2 size = new Vector2(60,20);
+     public Texture2D emptyTex;
+     public Texture2D fullTex;
+
+     public float guiPadding; 
 
     private void Start()
     {
@@ -44,42 +64,24 @@ public class PlayerController : MonoBehaviour
         threshold = Screen.height / 2;
         jumpCooldown = 0;
 
-        CreatePlanets();
 
-        CreateHoles();
+        pos = new Vector2(Screen.width - pos.x - size.x - guiPadding, Screen.height - pos.y - size.y - guiPadding);
+        //Cursor.lockState = CursorLockMode.Locked;
+         //   Cursor.lockState = CursorLockMode.None; 
+        // CreatePlanets();
 
-        //
     }
 
-    private void CreateHoles()
-    {
-        //var hole = (GameObject)Instantiate(holePrefab, new Vector3(10,0,0), new Quaternion(0,0,0,0));
-
-        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sphere.gameObject.name = "Hole1";
-        sphere.gameObject.transform.position = new Vector3(10, 0, 0);
-        sphere.gameObject.transform.localScale = new Vector3(10, 10, 10);
-        sphere.gameObject.layer = 8;
-        sphere.gameObject.AddComponent<Rigidbody>();
-        sphere.gameObject.GetComponent<Rigidbody>().isKinematic = true;
-        sphere.gameObject.GetComponent<Rigidbody>().useGravity = false;
-
-        var sphereCollider = gameObject.AddComponent<SphereCollider>();
-        sphereCollider.radius = 1.5f;
-        sphereCollider.isTrigger = true;
-    }
+    
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.name == "Hole1")
         {
-            Debug.Log("trigger entered, collider name: " + other.name + " gon:" + other.gameObject.name);
             Physics.IgnoreCollision(other, GetComponent<Collider>(), true);
             Physics.IgnoreCollision(zig.GetComponent<Collider>(), GetComponent<Collider>(), true);
         }
-        //{
-        // Debug.Log("trigger entered, collider name: " + other.name + " gon:" + other.gameObject.name);
-        //}
+        
     }
 
     private void OnTriggerExit(Collider other)
@@ -87,7 +89,10 @@ public class PlayerController : MonoBehaviour
         if (other.name == "Hole1")
         {
             Physics.IgnoreCollision(other, GetComponent<Collider>(), false);
-            Physics.IgnoreCollision(zig.GetComponent<Collider>(), GetComponent<Collider>(), false);
+            //Physics.IgnoreCollision(zig.GetComponent<Collider>(), GetComponent<Collider>(), false);
+
+            // instant relocate
+            //GetComponent<Rigidbody>().MovePosition(transform.position + transform.up*3);
 
         }
     }
@@ -139,51 +144,113 @@ public class PlayerController : MonoBehaviour
         */
     }
 
+    void OnGUI() {
+        // STEP 1 : Health Bar
+        //draw the background:
+        GUI.BeginGroup(new Rect(pos.x, pos.y, size.x, size.y));
+        GUI.Box(new Rect(0,0, size.x, size.y), emptyTex);
+         
+        //draw the filled-in part:
+        GUI.BeginGroup(new Rect(0,0, size.x * barDisplay, size.y));
+        GUI.Box(new Rect(0,0, size.x, size.y), fullTex);
+        GUI.EndGroup();
+        GUI.EndGroup();
+
+        // STEP 2 : Speedometer
+        // float speedBoxWidth = 30f;
+        // GUI.BeginGroup(new Rect(guiPadding, Screen.height - guiPadding - speedBoxWidth, speedBoxWidth, speedBoxWidth));
+        // GUI.Box(new Rect(0,0, speedBoxWidth, speedBoxWidth), fullTex);
+
+        // Vector2 start = new Vector2(0, 0);
+        // Vector2 finish = new Vector2(100, 100);
+        // GUI.DrawLine(start, finish, Color.cyan, 2f);
+        
+        // GUI.Label(new Rect(0,0, speedBoxWidth, speedBoxWidth), "yo");
+        // GUI.EndGroup();
+
+        GUI.Box(new Rect(Screen.width/2,Screen.height/2, 10, 10), "");
+
+
+
+     }
+     
+//      void Update() {
+//          //for this example, the bar display is linked to the current time,
+//          //however you would set this value based on your desired display
+//          //eg, the loading progress, the player's health, or whatever.
+         
+//  //        barDisplay = MyControlScript.staticHealth;
+//      }
+
 
 
     void Update()
     {
 
+        barDisplay = 1.0f;
 
         bool doMobile = false;
-
         if (jumpCooldown > 0)
         {
             jumpCooldown -= Time.deltaTime;
         }
-
         if (Application.platform == RuntimePlatform.IPhonePlayer || doMobile)
         {
             UpdateMobile();
         }
         else
         {
-
             left = Input.GetAxis("Vertical1");
             right = Input.GetAxis("Vertical2");
             leftH = Input.GetAxis("Horizontal1");
             rightH = Input.GetAxis("Horizontal2");
-            if (Input.GetKeyDown("joystick button 7") || Input.GetKeyDown(KeyCode.Space))
-            {
-                Fire();
 
+            var mousePos = Input.mousePosition;
+
+            mousePos.x -= Screen.width/2;
+            mousePos.y -= Screen.height/2;
+
+            float maxX = Screen.width/2;
+            float minX = 10f;
+
+            if ((mousePos.x < maxX && mousePos.x > minX) || (mousePos.x > -maxX && mousePos.x < -minX) ) {
+                rightH = -mousePos.x / maxX;
             }
 
-            {
+            float maxY = Screen.width/2;
+            float minY = 10f;
 
+            if ((mousePos.y < maxY && mousePos.y > minY) || (mousePos.y > -maxY && mousePos.y < -minY) ) {
+                right = -mousePos.y / maxY;
             }
 
+            
+
+            Debug.Log("Mouse is "+ mousePos);
+
+            
+            if (Input.GetKeyDown("joystick button 7") || Input.GetMouseButton(0))
+            {
+                if (Time.time > nextFire && fireRate > 0) {
+                    nextFire = Time.time + fireRate;
+                    Fire();
+                }
+
+            }
         }
-
     }
 
     void FixedUpdate()
     {
         if (collisionCount == 0)
         {
-            Debug.Log("no collisions !!!!!!");
+            grounded = false;
+            //GetComponent<Rigidbody>().AddForce(Vector3.up * -9.8f, ForceMode.Acceleration);
+
+        } else {
+            grounded = true;
         }
-        // Debug.Log("left  is " + left + "right is " + right);
+
         int i = 0;
         foreach (var planet in planets)
         {
@@ -191,78 +258,92 @@ public class PlayerController : MonoBehaviour
             i++;
         }
 
-        float movement = (left + right) * speed;
-        s = movement;
-        currentSpeed = movement;
-
-        float mass = GetComponent<Rigidbody>().mass;
-    
-        if (Mathf.Abs(left) > 0.05 || Mathf.Abs(right) > 0.05 || Mathf.Abs(leftH) > 0.05 || Mathf.Abs(rightH) > 0.05) {
-            
-        } else {
-            Debug.Log("should stop");
-            //GetComponent<Rigidbody>().AddForce(transform.up * -1.0f * speed, ForceMode.Force);
-            //GetComponent<Rigidbody>().velocity = Vector3.zero;
-            //GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
-        }
-        // add forward thrust
-
-
-        GetComponent<Rigidbody>().AddForce(transform.forward * (left+right) * speed, ForceMode.Impulse);
-        GetComponent<Rigidbody>().AddForce(transform.right * (leftH - rightH) * speed, ForceMode.Impulse);
-        GetComponent<Rigidbody>().AddTorque(transform.up * (left-right) * turnSpeed, ForceMode.Impulse);  
-
-        GameObject.Find("EngineRight").transform.localScale = new Vector3(right, right, right);
-        GameObject.Find("EngineLeft").transform.localScale = new Vector3(left, left, left);
-
-
-        // float rightEngine = 1.0f;
-
-        //GetComponent<Rigidbody>().AddForceAtPosition(transform.forward * left * speed, transform.position - transform.right * shipRadius);
-        //GetComponent<Rigidbody>().AddForceAtPosition(transform.forward * right * speed, transform.position + transform.right * shipRadius);
-        
-        // forward
-        
+        // track current speed for grapple hook launch speed etc.
+        currentSpeed = (left) * speed;
+       // GetComponent<Rigidbody>().AddForce(transform.forward * left * speed, ForceMode.Force);
+        // forward thrust
+        GetComponent<Rigidbody>().AddForce(transform.forward * (left + 1f) * speed, ForceMode.Force);
+        // left / right
+        GetComponent<Rigidbody>().AddForce(transform.right * leftH * speed, ForceMode.Force);
         // torque
-        
+        GetComponent<Rigidbody>().AddTorque(transform.up * (-rightH) * turnSpeed, ForceMode.Force);  
 
-    
+         GetComponent<Rigidbody>().AddTorque(transform.right * (right) * turnSpeed, ForceMode.Force); 
 
-        
+        //Debug.Log("now its" + left);
 
+        // scale the engines
+        GameObject.Find("EngineMain").transform.localScale = new Vector3(left, left, left);
+        //GameObject.Find("EngineLeft").transform.localScale = new Vector3(left, left, left);
 
-        // TODO: this single statement is equivalent to the following two, I am  trying to figure out why the turning directions behave differently
-        //float torque = (left - right) * turnSpeed * Time.deltaTime;
-        //GetComponent<Rigidbody>().AddTorque(transform.up * torque, ForceMode.Acceleration);
-        //GetComponent<Rigidbody>().AddTorque(transform.up * right * turnSpeed * Time.deltaTime, ForceMode.VelocityChange);
-        //GetComponent<Rigidbody>().AddTorque(-1.0f * transform.up * left * turnSpeed * Time.deltaTime, ForceMode.VelocityChange);
-        //  Debug.Log("torque" + torque);
 
         if(artificialGravityDirection.magnitude > 0 || this.GetComponent<GrappleHook>().hooked) {
             //this.GetComponent<Rigidbody>().useGravity = false;
         } else {
             //this.GetComponent<Rigidbody>().useGravity = true;
         }
-        // GetComponent<Rigidbody>().AddForce(artificialGravityDirection * 9.8f, ForceMode.Acceleration);
 
-        if (Input.GetKeyDown("joystick button 3"))
+
+        //if (grounded && currentSpeed < liftSpeed) GetComponent<Rigidbody>().AddForce(artificialGravityDirection * 9.8f, ForceMode.Acceleration);
+        // 
+
+
+        if (Input.GetKey("joystick button 3") || Input.GetKey(KeyCode.Space))
         {
-            Jump();
+            TrueFlatten();
+            
         }
 
-        if (Input.GetKeyDown("joystick button 1"))
+
+
+        if (Input.GetKey("joystick button 1"))
         {
-            AntiJump();
+            if (grounded) {
+                AntiJump();
+            } else {
+                AntiDive();
+            }
+           
         }
 
-        if (Input.GetKey("joystick button 0"))
+        if (Input.GetKey("joystick button 4") || Input.GetKey("q") )
         {
             Flatten();
         }
 
+        if (Input.GetKey("joystick button 5") || Input.GetKey("e"))
+        {
+            AntiFlatten();
+        }
+
+        // This would cast rays only against colliders in layer 8 .
+    // var layerMask = 1<<8;
+    // layerMask = ~layerMask;
+    //    RaycastHit hit;
+           
+    // cast a ray to the right of the player object
+    // if (Physics.Raycast (transform.position,transform.TransformDirection(-Vector3.up),out hit,30, layerMask)) {
+        
+    //     Debug.Log("hit " + hit.normal) ;
+    //     // orient the Moving Object's Left direction to Match the Normals on his Right
+    //     //var RunnerRotation = Quaternion.FromToRotation (Vector3.up, hit.normal);
+    //      transform.rotation = Quaternion.FromToRotation(Vector3.up, hit.normal);
+    //      GetComponent<Rigidbody>().AddForce(-hit.normal * 9.8f, ForceMode.Acceleration);
+        
+    //     //Smooth rotation
+
+    //     //transform.rotation = Quaternion.Slerp(transform.rotation, RunnerRotation,Time.deltaTime * 10);
+    // }
 
 
-
+    
+    // control player bounds 
+      if (transform.position.x > 1000f) {
+          transform.SetPositionAndRotation(new Vector3(-500, transform.position.y,transform.position.z), transform.rotation);
+      }
+      if (transform.position.x < -500) {
+          transform.SetPositionAndRotation(new Vector3(1000f, transform.position.y,transform.position.z), transform.rotation);
+      }
 
     }
 
@@ -271,6 +352,7 @@ public class PlayerController : MonoBehaviour
         collisionCount++;
 
         print("Collided with: " + col.gameObject.name + " at contact point " + col.contacts[0].normal);
+
 
         if (col.gameObject.name == "Terrain2")
         {
@@ -306,27 +388,53 @@ public class PlayerController : MonoBehaviour
     void Fire()
     {
         var bullet = (GameObject)Instantiate(bulletPrefab, transform.position + transform.forward * 3.1f, transform.rotation);
-        bullet.GetComponent<Rigidbody>().velocity = bullet.transform.forward * (200f);
+        bullet.GetComponent<Rigidbody>().velocity = bullet.transform.forward * (bulletSpeed);
         Destroy(bullet, 3.0f);
     }
 
     void Flatten()
     {
-        Debug.Log("twisting...");
-        // Rotate our transform a step closer to the target's.
-        //var rot = Quaternion.FromToRotation(-transform.right, transform.up);
-        //Vector3 diff =  Vector3.up - transform.up;
-        //Debug.Log("Diff is " + diff);
-        //if (diff.magnitude > 0.01f) {
+         GetComponent<Rigidbody>().AddTorque(transform.forward * twistSpeed, ForceMode.Force);
+        //transform.Rotate(Vector3.forward * Time.deltaTime * twistSpeed);
+    }
 
-        transform.Rotate(Vector3.forward * Time.deltaTime * 40f);
+    void TrueFlatten()
+    {
+        //var b = (GameObject)Instantiate(bulletPrefab, transform.position + transform.forward * 3.1f, transform.rotation);
+        Vector3 direction = Vector3.Cross(transform.right, Vector3.up);
+        
+
+        //testCube.transform.localPosition = direction *3f;
+        
+        // Quaternion toRotation = Quaternion.FromToRotation(transform.forward, direction);
+        // transform.localRotation = Quaternion.Lerp(transform.localRotation, toRotation, twistSpeed * Time.time);
 
 
-        //}
-        //transform.localRotation = Quaternion.RotateTowards(transform.rotation, rot, Time.deltaTime * 40.0f);
-        //transform.localRotation = rot;
+        // The step size is equal to speed times frame time.
+        float step = twistSpeed * Time.deltaTime;
 
-        //transform.rotation = Quaternion.FromToRotation(transform.up, Vector3.up) * transform.rotation;
+        Vector3 newDir = Vector3.RotateTowards(transform.forward, direction, step, 0.0f);
+        Debug.DrawRay(transform.position, newDir, Color.red);
+
+        // Move our position a step closer to the target.
+        transform.rotation = Quaternion.LookRotation(newDir);
+    }
+
+    void AntiFlatten()
+    {
+         GetComponent<Rigidbody>().AddTorque(-transform.forward * twistSpeed, ForceMode.Force);
+        //transform.Rotate(-Vector3.forward * Time.deltaTime * twistSpeed);
+    }
+
+      void Dive()
+    {
+
+        transform.Rotate(Vector3.right * Time.deltaTime * twistSpeed);
+    }
+
+    void AntiDive()
+    {
+        transform.Rotate(-Vector3.right * Time.deltaTime * twistSpeed);
     }
 
 
@@ -463,6 +571,12 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
+    }
+
+    void OnDrawGizmos()
+    {
+        Vector3 direction = Vector3.Cross(transform.right, Vector3.up);
+        Gizmos.DrawLine(transform.position, transform.position+direction);
     }
 
 

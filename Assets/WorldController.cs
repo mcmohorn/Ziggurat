@@ -12,7 +12,7 @@ public class WorldController : MonoBehaviour {
 	void Start () {
 
         Terrain terrain = GetComponent<Terrain>();
-        terrain.terrainData = GenerateTerrain(snowbasin, terrain.terrainData);
+        terrain.terrainData = GenerateTerrain(shroud, terrain.terrainData);
 	}
 	
 	 TerrainData GenerateTerrain(string aFileName, TerrainData aTerrain)
@@ -24,7 +24,7 @@ public class WorldController : MonoBehaviour {
      int h = aTerrain.heightmapHeight;
      int w = aTerrain.heightmapWidth;
      float[,] data = new float[h, w];
-     Debug.Log("h="+h + "   &  w="+w);
+
      using (var file = System.IO.File.OpenRead(aFileName))
      using (var reader = new System.IO.BinaryReader(file))
     
@@ -33,22 +33,25 @@ public class WorldController : MonoBehaviour {
          {
              for (int x = 0; x < w; x++)
              {
-                 Debug.Log("x="+ x + " , y="+y);
-                 float v = (float)reader.ReadUInt16() / 0xFFFF;
-                 data[y, x] = v / 100   ;
-                 if( v > max) {
-                     max = v;
-                 }
-                 if (v < min) {
-                     min = v;
-                 }
+                 // float v = (float)reader.ReadUInt16() / 0xFFFF;
+
+                if (x < w/2) {
+                    data[y, x] = 5 ;
+                } else {
+                    data[y, x] = 0 ;
+                }
+                 
+                //  if( v > max) {
+                //      max = v;
+                //  }
+                //  if (v < min) {
+                //      min = v;
+                //  }
              }
          }
      }
      aTerrain.SetHeights(0, 0, data);
      
-     Debug.Log("max is "+ max);
-      Debug.Log("min is "+ min);
      return aTerrain;
  }
 	// Update is called once per frame
